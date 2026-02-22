@@ -7,9 +7,10 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import DOMAIN, CONF_POLICY_PACKAGE, CONF_VERIFY_SSL, API_ENDPOINTS
 from .api import CheckPointApiClient
 
+# 1. Define the logger here at the top
 _LOGGER = logging.getLogger(__name__)
 
-# ADDED 'switch' to the platforms list
+# 2. Make sure 'switch' is included in the platforms
 PLATFORMS = ["sensor", "button", "switch"] 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
@@ -38,7 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     coordinator = DataUpdateCoordinator(
         hass,
-        logger=_LOGGER,
+        logger=_LOGGER,  # <-- 3. Pass the local _LOGGER here to fix your error!
         name=DOMAIN,
         update_method=async_update_data,
         update_interval=timedelta(minutes=15),
