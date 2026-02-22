@@ -46,34 +46,53 @@ class CheckPointApiClient:
         return []
 
     async def get_object_count(self, endpoint, package=None):
-        # Default payload for standard object lookups
         payload = {"limit": 500} 
-        
-        # Access Rulebase uses the "name" parameter (for the Layer)
         if endpoint == "show-access-rulebase":
-            payload = {
-                "offset": 0,
-                "limit": 1,
-                "name": package, 
-                "details-level": "standard"
-            }
-            
-        # NAT Rulebase uses the "package" parameter
+            payload = {"offset": 0, "limit": 1, "name": package, "details-level": "standard"}
         elif endpoint == "show-nat-rulebase":
-            payload = {
-                "offset": 0,
-                "limit": 1,
-                "package": package,
-                "details-level": "standard"
-            }
+            payload = {"offset": 0, "limit": 1, "package": package, "details-level": "standard"}
             
         data = await self._request(endpoint, payload)
-        
-        # Grab the top-level 'total' key
         if data and "total" in data:
             return data["total"]
-            
         return 0
+
+    # NEW: Fetch all rules and extract them from sections
+    async def get_all_access_rules(self, package):
+        payload = {
+            "name": package,
+            "details-level": "standard",
+            "limit": 500,
+            "offset": 0
+        }
+        data = await self._request("show-access-rulebase", payload)
+        rules = []
+        if data and "rulebase" in data:
+            rules = self._extract_rules(data["rulebase"])
+        return rules
+
+    # NEW: Recursive helper to handle rule sections
+    def _extract_rules(self, rulebase):
+        rules = []
+        for item in rulebase:
+            if item.get("type") == "rule":
+                rules.append(item)
+            elif item.get("type") == "section" and "rulebase" in item:
+                rules.extend(self._extract_rules(item["rulebase"]))
+        return rules
+
+    # NEW: Change the state of a rule
+    async def set_access_rule_state(self, uid, layer, enabled: bool):
+        payload = {
+            "uid": uid,
+            "layer": layer,
+            "enabled": enabled
+        }
+        return await self._request("set-access-rule", payload)
+
+    # NEW: Publish changes to the database
+    async def publish(self):
+        return await self._request("publish", {})
 
     async def install_policy(self, package):
         payload = {"policy-package": package, "access": True}
