@@ -45,10 +45,23 @@ class CheckPointApiClient:
             return [pkg["name"] for pkg in data["packages"]]
         return []
 
+    # NEW: Helper function to extract the Access Layer name from the Policy Package
+    async def _get_layer(self, package):
+        data = await self._request("show-package", {"name": package, "details-level": "standard"})
+        if data and "access-layers" in data and len(data["access-layers"]) > 0:
+            return data["access-layers"][0]["name"]
+        
+        # Fallback to standard Check Point naming conventions if it can't find it
+        return "Network"
+
     async def get_object_count(self, endpoint, package=None):
         payload = {"limit": 500} 
+        
         if endpoint == "show-access-rulebase":
-            payload = {"offset": 0, "limit": 1, "name": package, "details-level": "standard"}
+            # Discover the correct layer name first!
+            layer = await self._get_layer(package)
+            payload = {"offset": 0, "limit": 1, "name": layer, "details-level": "standard"}
+            
         elif endpoint == "show-nat-rulebase":
             payload = {"offset": 0, "limit": 1, "package": package, "details-level": "standard"}
             
@@ -57,10 +70,11 @@ class CheckPointApiClient:
             return data["total"]
         return 0
 
-    # NEW: Fetch all rules and extract them from sections
     async def get_all_access_rules(self, package):
+        # Discover the correct layer name first!
+        layer = await self._get_layer(package)
         payload = {
-            "name": package,
+            "name": layer,
             "details-level": "standard",
             "limit": 500,
             "offset": 0
@@ -71,7 +85,6 @@ class CheckPointApiClient:
             rules = self._extract_rules(data["rulebase"])
         return rules
 
-    # NEW: Recursive helper to handle rule sections
     def _extract_rules(self, rulebase):
         rules = []
         for item in rulebase:
@@ -81,8 +94,9 @@ class CheckPointApiClient:
                 rules.extend(self._extract_rules(item["rulebase"]))
         return rules
 
-    # NEW: Change the state of a rule
-    async def set_access_rule_state(self, uid, layer, enabled: bool):
+    async def set_access_rule_state(self, uid, package, enabled: bool):
+        # The set-access-rule command also requires the layer!
+        layer = await self._get_layer(package)
         payload = {
             "uid": uid,
             "layer": layer,
@@ -90,7 +104,6 @@ class CheckPointApiClient:
         }
         return await self._request("set-access-rule", payload)
 
-    # NEW: Publish changes to the database
     async def publish(self):
         return await self._request("publish", {})
 
