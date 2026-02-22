@@ -46,13 +46,33 @@ class CheckPointApiClient:
         return []
 
     async def get_object_count(self, endpoint, package=None):
-        payload = {"limit": 500} # As requested
-        if package and endpoint in ["show-access-rulebase", "show-nat-rulebase"]:
-            payload["name"] = package
+        # Default payload for standard object lookups
+        payload = {"limit": 500} 
+        
+        # Access Rulebase uses the "name" parameter (for the Layer)
+        if endpoint == "show-access-rulebase":
+            payload = {
+                "offset": 0,
+                "limit": 1,
+                "name": package, 
+                "details-level": "standard"
+            }
+            
+        # NAT Rulebase uses the "package" parameter
+        elif endpoint == "show-nat-rulebase":
+            payload = {
+                "offset": 0,
+                "limit": 1,
+                "package": package,
+                "details-level": "standard"
+            }
             
         data = await self._request(endpoint, payload)
+        
+        # Grab the top-level 'total' key
         if data and "total" in data:
             return data["total"]
+            
         return 0
 
     async def install_policy(self, package):
