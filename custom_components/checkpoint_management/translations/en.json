@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Check Point Management Info",
+        "description": "Enter the connection details for your Check Point Management server.",
+        "data": {
+          "host": "Host/IP Address",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password",
+          "verify_ssl": "Verify SSL Certificate"
+        }
+      },
+      "package": {
+        "title": "Select Policy Package",
+        "description": "Select the policy package to monitor and install.",
+        "data": {
+          "policy_package": "Policy Package"
+        }
+      }
+    },
+    "error": {
+      "auth_error": "Failed to connect or authenticate. Check your credentials and network."
+    }
+  }
+}
