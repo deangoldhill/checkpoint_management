@@ -88,10 +88,12 @@ class CheckPointApiClient:
     def _extract_rules(self, rulebase):
         rules = []
         for item in rulebase:
-            if item.get("type") == "rule":
-                rules.append(item)
-            elif item.get("type") == "section" and "rulebase" in item:
+            # If it contains a nested 'rulebase', it is a section. Dig deeper!
+            if "rulebase" in item:
                 rules.extend(self._extract_rules(item["rulebase"]))
+            # If it has a 'rule-number', it is definitively a rule we can toggle.
+            elif "rule-number" in item:
+                rules.append(item)
         return rules
 
     async def set_access_rule_state(self, uid, package, enabled: bool):
