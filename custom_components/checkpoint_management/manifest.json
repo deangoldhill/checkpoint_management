@@ -1,0 +1,12 @@
+{
+  "domain": "checkpoint_management",
+  "name": "Check Point Management",
+  "codeowners": ["@deangoldhill"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/deangoldhill/checkpoint_management",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "1.0.0"
+}
