@@ -1,0 +1,6 @@
+{
+  "name": "Check Point Management",
+  "render_readme": true,
+  "hacs": "1.19.0",
+  "zip_release": false
+}
