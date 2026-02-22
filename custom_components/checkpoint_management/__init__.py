@@ -7,10 +7,10 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import DOMAIN, CONF_POLICY_PACKAGE, CONF_VERIFY_SSL, API_ENDPOINTS
 from .api import CheckPointApiClient
 
-# Define the logger for this specific file
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["sensor", "button"]
+# ADDED 'switch' to the platforms list
+PLATFORMS = ["sensor", "button", "switch"] 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     api = CheckPointApiClient(
@@ -25,14 +25,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         await api.login()
         data = {}
         package = entry.data[CONF_POLICY_PACKAGE]
+        
+        # Get counts for sensors
         for key, endpoint in API_ENDPOINTS.items():
             data[key] = await api.get_object_count(endpoint, package)
+            
+        # Get rules for switches
+        data["rules"] = await api.get_all_access_rules(package)
+        
         await api.logout()
         return data
 
     coordinator = DataUpdateCoordinator(
         hass,
-        logger=_LOGGER,  # <-- This is the fix
+        logger=_LOGGER,
         name=DOMAIN,
         update_method=async_update_data,
         update_interval=timedelta(minutes=15),
