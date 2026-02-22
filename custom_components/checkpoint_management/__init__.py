@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -5,6 +6,9 @@ from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWO
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import DOMAIN, CONF_POLICY_PACKAGE, CONF_VERIFY_SSL, API_ENDPOINTS
 from .api import CheckPointApiClient
+
+# Define the logger for this specific file
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["sensor", "button"]
 
@@ -28,7 +32,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     coordinator = DataUpdateCoordinator(
         hass,
-        logger=api._LOGGER,
+        logger=_LOGGER,  # <-- This is the fix
         name=DOMAIN,
         update_method=async_update_data,
         update_interval=timedelta(minutes=15),
