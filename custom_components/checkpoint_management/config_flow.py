@@ -1,7 +1,7 @@
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
-from .const import DOMAIN, CONF_POLICY_PACKAGE, CONF_VERIFY_SSL
+from .const import DOMAIN, CONF_POLICY_PACKAGE, CONF_VERIFY_SSL, CONF_POLLING_INTERVAL
 from .api import CheckPointApiClient
 
 class CheckPointConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -45,6 +45,7 @@ class CheckPointConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=self.data[CONF_HOST], data=self.data)
 
         data_schema = vol.Schema({
-            vol.Required(CONF_POLICY_PACKAGE): vol.In(self.packages)
+            vol.Required(CONF_POLICY_PACKAGE): vol.In(self.packages),
+            vol.Required(CONF_POLLING_INTERVAL, default=15): int
         })
         return self.async_show_form(step_id="package", data_schema=data_schema)
