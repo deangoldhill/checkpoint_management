@@ -19,7 +19,8 @@ class CheckPointSensor(SensorEntity):
         self.key = key
         self.host = host
         self.entry_id = entry_id
-        self._attr_name = f"Check Point {key.replace('_', ' ').title()} Count"
+        # Removed "Check Point" prefix
+        self._attr_name = f"{key.replace('_', ' ').title()} Count"
         self._attr_unique_id = f"cp_{self.entry_id}_{key}"
         self._attr_state_class = "measurement"
 
@@ -52,7 +53,8 @@ class CheckPointLicenseSensor(SensorEntity):
         self.coordinator = coordinator
         self.host = host
         self.entry_id = entry_id
-        self._attr_name = "Check Point License Status"
+        # Removed "Check Point" prefix
+        self._attr_name = "License Status"
         self._attr_unique_id = f"cp_{self.entry_id}_license_status"
 
     @property
