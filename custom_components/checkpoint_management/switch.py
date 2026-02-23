@@ -37,7 +37,8 @@ class CheckPointRuleSwitch(SwitchEntity):
         if not rule_name:
             rule_name = f"Rule {rule_data.get('rule-number')}"
             
-        self._attr_name = f"Check Point Rule: {rule_name}"
+        # Removed "Check Point" prefix
+        self._attr_name = f"Rule: {rule_name}"
         self._attr_unique_id = f"cp_rule_{self.rule_uid}"
 
     @property
