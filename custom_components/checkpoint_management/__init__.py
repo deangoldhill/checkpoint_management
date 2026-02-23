@@ -35,14 +35,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         await api.logout()
         return data
 
-    polling_interval = entry.data.get(CONF_POLLING_INTERVAL, 15)
+    # Default to 60 seconds if the key doesn't exist yet
+    polling_interval = entry.data.get(CONF_POLLING_INTERVAL, 60)
 
     coordinator = DataUpdateCoordinator(
         hass,
         logger=_LOGGER,
         name=DOMAIN,
         update_method=async_update_data,
-        update_interval=timedelta(minutes=polling_interval),
+        # CHANGED: Replaced minutes with seconds
+        update_interval=timedelta(seconds=polling_interval),
     )
 
     await coordinator.async_config_entry_first_refresh()
