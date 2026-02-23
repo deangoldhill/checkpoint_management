@@ -37,7 +37,6 @@ class CheckPointRuleSwitch(SwitchEntity):
         if not rule_name:
             rule_name = f"Rule {rule_data.get('rule-number')}"
             
-        # Removed "Check Point" prefix
         self._attr_name = f"Rule: {rule_name}"
         self._attr_unique_id = f"cp_rule_{self.rule_uid}"
 
@@ -58,6 +57,33 @@ class CheckPointRuleSwitch(SwitchEntity):
             if rule.get("uid") == self.rule_uid:
                 return rule.get("enabled", False)
         return False
+
+    @property
+    def extra_state_attributes(self):
+        rules = self.coordinator.data.get("rules", [])
+        for rule in rules:
+            if rule.get("uid") == self.rule_uid:
+                attributes = {"policy_package": self.package}
+                
+                for key, value in rule.items():
+                    if key in ["uid", "name", "enabled", "type", "rule-number"]:
+                        continue
+                        
+                    if isinstance(value, list) and all(isinstance(i, dict) and "name" in i for i in value):
+                        attributes[key] = ", ".join([i["name"] for i in value])
+                    elif isinstance(value, dict) and "name" in value:
+                        attributes[key] = value["name"]
+                    elif key == "hits" and isinstance(value, dict):
+                        attributes["hits"] = value.get("value", 0)
+                        attributes["hits_percentage"] = value.get("percentage")
+                        if "last-date" in value and isinstance(value["last-date"], dict):
+                            attributes["last_hit"] = value["last-date"].get("iso-8601")
+                        else:
+                            attributes["last_hit"] = value.get("last-date")
+                    else:
+                        attributes[key] = value
+                return attributes
+        return {}
 
     @property
     def should_poll(self):
