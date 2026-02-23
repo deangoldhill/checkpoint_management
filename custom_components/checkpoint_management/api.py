@@ -45,20 +45,16 @@ class CheckPointApiClient:
             return [pkg["name"] for pkg in data["packages"]]
         return []
 
-    # NEW: Helper function to extract the Access Layer name from the Policy Package
     async def _get_layer(self, package):
         data = await self._request("show-package", {"name": package, "details-level": "standard"})
         if data and "access-layers" in data and len(data["access-layers"]) > 0:
             return data["access-layers"][0]["name"]
-        
-        # Fallback to standard Check Point naming conventions if it can't find it
         return "Network"
 
     async def get_object_count(self, endpoint, package=None):
         payload = {"limit": 500} 
         
         if endpoint == "show-access-rulebase":
-            # Discover the correct layer name first!
             layer = await self._get_layer(package)
             payload = {"offset": 0, "limit": 1, "name": layer, "details-level": "standard"}
             
@@ -71,14 +67,8 @@ class CheckPointApiClient:
         return 0
 
     async def get_all_access_rules(self, package):
-        # Discover the correct layer name first!
         layer = await self._get_layer(package)
-        payload = {
-            "name": layer,
-            "details-level": "standard",
-            "limit": 500,
-            "offset": 0
-        }
+        payload = {"name": layer, "details-level": "standard", "limit": 500, "offset": 0}
         data = await self._request("show-access-rulebase", payload)
         rules = []
         if data and "rulebase" in data:
@@ -88,28 +78,31 @@ class CheckPointApiClient:
     def _extract_rules(self, rulebase):
         rules = []
         for item in rulebase:
-            # If it contains a nested 'rulebase', it is a section. Dig deeper!
             if "rulebase" in item:
                 rules.extend(self._extract_rules(item["rulebase"]))
-            # If it has a 'rule-number', it is definitively a rule we can toggle.
             elif "rule-number" in item:
                 rules.append(item)
         return rules
 
     async def set_access_rule_state(self, uid, package, enabled: bool):
-        # The set-access-rule command also requires the layer!
         layer = await self._get_layer(package)
-        payload = {
-            "uid": uid,
-            "layer": layer,
-            "enabled": enabled
-        }
+        payload = {"uid": uid, "layer": layer, "enabled": enabled}
         return await self._request("set-access-rule", payload)
 
     async def publish(self):
         return await self._request("publish", {})
 
     async def install_policy(self, package):
-        payload = {"policy-package": package, "access": True}
+        payload = {"policy-package": package, "access": True, "threat-prevention": False}
         data = await self._request("install-policy", payload)
         return data is not None
+
+    async def install_database(self):
+        data = await self._request("install-database", {})
+        return data is not None
+
+    async def verify_management_license(self):
+        return await self._request("verify-management-license", {})
+
+    async def show_cloud_services(self):
+        return await self._request("show-cloud-services", {})
