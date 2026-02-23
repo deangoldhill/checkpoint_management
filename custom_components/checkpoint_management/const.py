@@ -14,7 +14,7 @@ API_ENDPOINTS = {
     "access_layers": "show-access-layers",
     "access_rules": "show-access-rulebase",
     "nat_rules": "show-nat-rulebase",
-    "vpn_meshed": "show-vpn-community-meshed",
+    "vpn_meshed": "show-vpn-communities-meshed",
     "vpn_star": "show-vpn-communities-star",
     "vpn_remote_access": "show-vpn-communities-remote-access"
 }
