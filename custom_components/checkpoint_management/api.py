@@ -68,7 +68,13 @@ class CheckPointApiClient:
 
     async def get_all_access_rules(self, package):
         layer = await self._get_layer(package)
-        payload = {"name": layer, "details-level": "standard", "limit": 500, "offset": 0}
+        payload = {
+            "name": layer, 
+            "details-level": "standard", 
+            "limit": 500, 
+            "offset": 0,
+            "show-hits": True
+        }
         data = await self._request("show-access-rulebase", payload)
         rules = []
         if data and "rulebase" in data:
@@ -97,8 +103,22 @@ class CheckPointApiClient:
         data = await self._request("install-policy", payload)
         return data is not None
 
-    async def install_database(self):
-        data = await self._request("install-database", {})
+    async def get_gateways_and_servers(self):
+        data = await self._request("show-gateways-and-servers", {"details-level": "standard", "limit": 500})
+        gateways_data = {"types": {}, "mgmt_servers": []}
+        
+        if data and "objects" in data:
+            for obj in data["objects"]:
+                obj_type = obj.get("type", "Unknown")
+                gateways_data["types"][obj_type] = gateways_data["types"].get(obj_type, 0) + 1
+                if obj_type == "CpmiHostCkp":
+                    gateways_data["mgmt_servers"].append(obj.get("name"))
+                    
+        return gateways_data
+
+    async def install_database(self, targets):
+        payload = {"targets": targets}
+        data = await self._request("install-database", payload)
         return data is not None
 
     async def verify_management_license(self):
