@@ -46,7 +46,6 @@ class CheckPointConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         data_schema = vol.Schema({
             vol.Required(CONF_POLICY_PACKAGE): vol.In(self.packages),
-            # NEW: Set default to 60, coerce input to integer, and set minimum boundary to 5
             vol.Required(CONF_POLLING_INTERVAL, default=60): vol.All(vol.Coerce(int), vol.Range(min=5))
         })
         return self.async_show_form(step_id="package", data_schema=data_schema)
