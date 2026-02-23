@@ -74,7 +74,7 @@ class CheckPointRuleSwitch(SwitchEntity):
                     elif isinstance(value, dict) and "name" in value:
                         attributes[key] = value["name"]
                     elif key == "hits" and isinstance(value, dict):
-                        attributes["hits"] = value.get("value", 0)
+                        attributes["hits_last_hour"] = value.get("value", 0)
                         attributes["hits_percentage"] = value.get("percentage")
                         if "last-date" in value and isinstance(value["last-date"], dict):
                             attributes["last_hit"] = value["last-date"].get("iso-8601")
