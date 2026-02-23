@@ -4,13 +4,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from .const import DOMAIN, CONF_POLICY_PACKAGE, CONF_VERIFY_SSL, API_ENDPOINTS
+from .const import DOMAIN, CONF_POLICY_PACKAGE, CONF_VERIFY_SSL, CONF_POLLING_INTERVAL, API_ENDPOINTS
 from .api import CheckPointApiClient
 
-# 1. Define the logger here at the top
 _LOGGER = logging.getLogger(__name__)
 
-# 2. Make sure 'switch' is included in the platforms
 PLATFORMS = ["sensor", "button", "switch"] 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
@@ -27,22 +25,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         data = {}
         package = entry.data[CONF_POLICY_PACKAGE]
         
-        # Get counts for sensors
         for key, endpoint in API_ENDPOINTS.items():
             data[key] = await api.get_object_count(endpoint, package)
             
-        # Get rules for switches
         data["rules"] = await api.get_all_access_rules(package)
+        data["license"] = await api.verify_management_license()
+        data["cloud_services"] = await api.show_cloud_services()
         
         await api.logout()
         return data
 
+    polling_interval = entry.data.get(CONF_POLLING_INTERVAL, 15)
+
     coordinator = DataUpdateCoordinator(
         hass,
-        logger=_LOGGER,  # <-- 3. Pass the local _LOGGER here to fix your error!
+        logger=_LOGGER,
         name=DOMAIN,
         update_method=async_update_data,
-        update_interval=timedelta(minutes=15),
+        update_interval=timedelta(minutes=polling_interval),
     )
 
     await coordinator.async_config_entry_first_refresh()
