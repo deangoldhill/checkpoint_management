@@ -1,5 +1,6 @@
 import aiohttp
 import logging
+from datetime import datetime, timedelta
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,13 +69,22 @@ class CheckPointApiClient:
 
     async def get_all_access_rules(self, package):
         layer = await self._get_layer(package)
+        
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        
         payload = {
             "name": layer, 
             "details-level": "standard", 
             "limit": 500, 
             "offset": 0,
-            "show-hits": True
+            "show-hits": True,
+            "hits-settings": {
+                "from-date": one_hour_ago.strftime("%Y-%m-%dT%H:%M:%S"),
+                "to-date": now.strftime("%Y-%m-%dT%H:%M:%S")
+            }
         }
+        
         data = await self._request("show-access-rulebase", payload)
         rules = []
         if data and "rulebase" in data:
