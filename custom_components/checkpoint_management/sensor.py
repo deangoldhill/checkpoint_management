@@ -11,6 +11,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     sensors.append(CheckPointLicenseSensor(coordinator, host, entry.entry_id))
     sensors.append(CheckPointCloudServicesSensor(coordinator, host, entry.entry_id))
     
+    gateways_data = coordinator.data.get("gateways", {})
+    gateway_types = gateways_data.get("types", {}).keys()
+    for gw_type in gateway_types:
+        sensors.append(CheckPointGatewayTypeSensor(coordinator, gw_type, host, entry.entry_id))
+    
     async_add_entities(sensors)
 
 class CheckPointSensor(SensorEntity):
@@ -19,7 +24,6 @@ class CheckPointSensor(SensorEntity):
         self.key = key
         self.host = host
         self.entry_id = entry_id
-        # Removed "Check Point" prefix
         self._attr_name = f"{key.replace('_', ' ').title()} Count"
         self._attr_unique_id = f"cp_{self.entry_id}_{key}"
         self._attr_state_class = "measurement"
@@ -48,12 +52,41 @@ class CheckPointSensor(SensorEntity):
     async def async_added_to_hass(self):
         self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
 
+class CheckPointGatewayTypeSensor(SensorEntity):
+    def __init__(self, coordinator, gw_type, host, entry_id):
+        self.coordinator = coordinator
+        self.gw_type = gw_type
+        self.host = host
+        self.entry_id = entry_id
+        self._attr_name = f"{gw_type} Count"
+        self._attr_unique_id = f"cp_{self.entry_id}_gw_type_{gw_type.lower()}"
+        self._attr_state_class = "measurement"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self.entry_id)},
+            name=f"Check Point Management ({self.host})",
+            manufacturer="Check Point",
+            model="Management Server"
+        )
+
+    @property
+    def state(self):
+        return self.coordinator.data.get("gateways", {}).get("types", {}).get(self.gw_type, 0)
+
+    @property
+    def should_poll(self):
+        return False
+
+    async def async_added_to_hass(self):
+        self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
+
 class CheckPointLicenseSensor(SensorEntity):
     def __init__(self, coordinator, host, entry_id):
         self.coordinator = coordinator
         self.host = host
         self.entry_id = entry_id
-        # Removed "Check Point" prefix
         self._attr_name = "License Status"
         self._attr_unique_id = f"cp_{self.entry_id}_license_status"
 
@@ -71,6 +104,15 @@ class CheckPointLicenseSensor(SensorEntity):
         data = self.coordinator.data.get("license")
         if data:
             return data.get("license-status")
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        data = self.coordinator.data.get("license")
+        if data and isinstance(data, dict):
+            attributes = data.copy()
+            attributes.pop("license-status", None)
+            return attributes
         return None
 
     @property
