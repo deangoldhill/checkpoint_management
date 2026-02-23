@@ -1,42 +1,30 @@
 # Check Point Management for Home Assistant
 
-A custom integration for Home Assistant that connects to the Check Point Management API. It allows you to monitor the number of objects, rules, and zones in your environment, and provides a button to install your selected policy package directly from Home Assistant.
+A custom integration for Home Assistant that connects to the Check Point Management API. Monitor firewall objects, VPN communities, track license statuses, and toggle individual security rules natively via Home Assistant devices.
 
 ## Features
-
-* **Dynamic Object Sensors:** Tracks the total count of Hosts, Networks, Groups, Dynamic Objects, Security Zones, Data Centers, Updatable Objects, Access Layers, Access Rules, and NAT Rules.
-* **Policy Installation Button:** Easily push/install your selected policy package via a Home Assistant dashboard button.
-* **UI Configuration:** Fully configurable via the Home Assistant UI, including dynamic fetching of available policy packages during setup.
+* **Device Grouping:** All entities automatically group underneath your Check Point server inside Home Assistant Devices.
+* **Granular Object Counters:** Track Hosts, Networks, Groups, Dynamic Objects, Security Zones, VPN Communities (Meshed, Star, Remote Access), and more.
+* **Dynamic Gateway Detection:** Automatically discovers gateway/server types on your network and builds sensors mapping their quantities.
+* **Rule Switches with Rich Metadata:** Imports every rule inside your selected policy package as a toggleable switch entity. These switches track and display rich extra attributes including match hits, sources, destinations, and assigned actions.
+* **Actionable Buttons:** Allows you to install the Access Policy or Database natively via Home Assistant.
+* **Advanced Config:** Supports dynamic polling intervals directly via UI setup.
 
 ## Prerequisites: Check Point API Setup
-
-Before installing this integration, you must ensure the Check Point Management API is enabled and accessible to your Home Assistant instance.
-
-1. Open **Check Point SmartConsole**.
+1. Open Check Point SmartConsole.
 2. Navigate to **Manage & Settings** > **Blades** > **Management API** > **Advanced Settings**.
-3. Ensure **Automatic start** is checked.
-4. Set **Require IP/Hostname matching** to "All IP addresses" or specify the IP address of your Home Assistant server.
-5. Publish the changes.
-6. Restart the API service via SSH (Expert mode) on your management server using the command: `api restart`
-7. Create a dedicated API user in SmartConsole with the necessary permissions (Read-only for sensors, but requires "Install Policy" permissions if you intend to use the install button).
-8. Publish the creation of the new user.
+3. Set **Require IP/Hostname matching** to "All IP addresses" or specify the IP address of your Home Assistant server.
+4. Publish the changes.
+5. Restart the API service via SSH (Expert mode) using the command: `api restart`
+6. Create an API user with permissions to read objects and install policies.
 
 ## Installation via HACS
-
-1. Open Home Assistant and navigate to **HACS**.
-2. Click the three dots in the top right corner and select **Custom repositories**.
-3. Paste the URL of this repository into the repository field.
-4. Select **Integration** as the category and click **Add**.
-5. Close the custom repositories window.
-6. Search for "Check Point Management" in HACS and click **Download**.
-7. Restart Home Assistant.
+1. Navigate to **HACS** > **Integrations**.
+2. Select **Custom repositories** via the top right menu.
+3. Paste the URL of this repository, select **Integration**, and click **Add**.
+4. Download "Check Point Management" in HACS and restart Home Assistant.
 
 ## Configuration
-
-1. In Home Assistant, go to **Settings** > **Devices & Services**.
-2. Click **Add Integration** in the bottom right corner.
-3. Search for **Check Point Management** and select it.
-4. Enter your Check Point Management IP/Hostname, Port (usually 443), Username, and Password.
-5. Choose whether to verify the SSL certificate (leave unchecked if using a self-signed certificate).
-6. Click **Submit**.
-7. On the next screen, select the **Policy Package** you want to monitor and install, then click **Submit**.
+1. Go to **Settings** > **Devices & Services** and add the "Check Point Management" integration.
+2. Enter the Host, Port, Username, and Password.
+3. On the next screen, select the desired **Policy Package** from the dynamic dropdown and define your **Polling Interval** (default 60 seconds, minimum 5 seconds).
