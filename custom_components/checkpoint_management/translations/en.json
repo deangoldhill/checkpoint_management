@@ -16,7 +16,8 @@
         "title": "Select Policy Package",
         "description": "Select the policy package to monitor and install.",
         "data": {
-          "policy_package": "Policy Package"
+          "policy_package": "Policy Package",
+          "polling_interval": "Polling Interval (seconds)"
         }
       }
     },
