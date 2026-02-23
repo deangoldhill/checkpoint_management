@@ -1,5 +1,7 @@
 import logging
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.const import CONF_HOST
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -8,29 +10,27 @@ async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     api = hass.data[DOMAIN][entry.entry_id]["api"]
     package = hass.data[DOMAIN][entry.entry_id]["package"]
+    host = entry.data[CONF_HOST]
     
     rules = coordinator.data.get("rules", [])
     
-    # LOUD LOGGING: Prints exactly how many rules HA sees
-    _LOGGER.warning(f"Check Point Switch Setup: Found {len(rules)} rules to create switches for.")
-    
     if not rules:
-        _LOGGER.error("Check Point Switch Setup: No rules were found. The extraction might be failing.")
         return
 
     switches = []
     
     for rule in rules:
-        switches.append(CheckPointRuleSwitch(coordinator, api, package, rule))
+        switches.append(CheckPointRuleSwitch(coordinator, api, package, rule, host, entry.entry_id))
         
     async_add_entities(switches)
-    _LOGGER.warning(f"Check Point Switch Setup: Successfully passed {len(switches)} switches to Home Assistant.")
 
 class CheckPointRuleSwitch(SwitchEntity):
-    def __init__(self, coordinator, api, package, rule_data):
+    def __init__(self, coordinator, api, package, rule_data, host, entry_id):
         self.coordinator = coordinator
         self.api = api
         self.package = package
+        self.host = host
+        self.entry_id = entry_id
         self.rule_uid = rule_data.get("uid")
         
         rule_name = rule_data.get("name")
@@ -39,6 +39,16 @@ class CheckPointRuleSwitch(SwitchEntity):
             
         self._attr_name = f"Check Point Rule: {rule_name}"
         self._attr_unique_id = f"cp_rule_{self.rule_uid}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self.entry_id)},
+            name=f"Check Point Management ({self.host})",
+            manufacturer="Check Point",
+            model="Management Server",
+            configuration_url=f"https://{self.host}"
+        )
 
     @property
     def is_on(self):
@@ -53,11 +63,9 @@ class CheckPointRuleSwitch(SwitchEntity):
         return False
 
     async def _toggle_rule(self, state: bool):
-        _LOGGER.info(f"Toggling rule {self._attr_name} to {state}")
         await self.api.login()
         await self.api.set_access_rule_state(self.rule_uid, self.package, state)
         await self.api.publish()
-        _LOGGER.info(f"Installing policy {self.package}...")
         await self.api.install_policy(self.package)
         await self.api.logout()
         
