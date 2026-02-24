@@ -46,24 +46,22 @@ class CheckPointApiClient:
             return [pkg["name"] for pkg in data["packages"]]
         return []
 
-    # CHANGED: Now returns a list of ALL layers in the package
-    async def _get_all_layers(self, package):
-        data = await self._request("show-package", {"name": package, "details-level": "standard"})
+    # CHANGED: Now uses show-access-layers to get EVERY layer, including inline layers
+    async def _get_all_layers(self):
+        data = await self._request("show-access-layers", {"limit": 500, "details-level": "standard"})
         layers = []
         if data and "access-layers" in data:
             for layer in data["access-layers"]:
                 layers.append(layer["name"])
                 
-        # Fallback just in case
         if not layers:
-            layers.append("Network")
+            layers.append("Network") # Safety fallback
             
         return layers
 
     async def get_object_count(self, endpoint, package=None):
-        # CHANGED: Loop through all layers and sum the rule counts
         if endpoint == "show-access-rulebase":
-            layers = await self._get_all_layers(package)
+            layers = await self._get_all_layers() # Fetch all layers globally
             total_rules = 0
             for layer in layers:
                 payload = {"offset": 0, "limit": 1, "name": layer, "details-level": "standard"}
@@ -79,7 +77,6 @@ class CheckPointApiClient:
                 return data["total"]
             return 0
             
-        # Standard fallback for non-rulebase endpoints
         else:
             payload = {"limit": 500} 
             data = await self._request(endpoint, payload)
@@ -88,13 +85,12 @@ class CheckPointApiClient:
             return 0
 
     async def get_all_access_rules(self, package):
-        layers = await self._get_all_layers(package)
+        layers = await self._get_all_layers() # Fetch all layers globally
         
         now = datetime.now()
         one_hour_ago = now - timedelta(hours=1)
         all_rules = []
         
-        # CHANGED: Iterate through every layer to fetch its rules
         for layer in layers:
             payload = {
                 "name": layer, 
@@ -111,7 +107,6 @@ class CheckPointApiClient:
             data = await self._request("show-access-rulebase", payload)
             if data and "rulebase" in data:
                 rules = self._extract_rules(data["rulebase"])
-                # Inject the specific layer name into each rule so the switch knows it
                 for rule in rules:
                     rule["layer_name"] = layer
                 all_rules.extend(rules)
@@ -127,7 +122,6 @@ class CheckPointApiClient:
                 rules.append(item)
         return rules
 
-    # CHANGED: Accept the specific layer instead of the package
     async def set_access_rule_state(self, uid, layer, enabled: bool):
         payload = {"uid": uid, "layer": layer, "enabled": enabled}
         return await self._request("set-access-rule", payload)
