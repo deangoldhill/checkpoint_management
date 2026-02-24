@@ -46,50 +46,77 @@ class CheckPointApiClient:
             return [pkg["name"] for pkg in data["packages"]]
         return []
 
-    async def _get_layer(self, package):
+    # CHANGED: Now returns a list of ALL layers in the package
+    async def _get_all_layers(self, package):
         data = await self._request("show-package", {"name": package, "details-level": "standard"})
-        if data and "access-layers" in data and len(data["access-layers"]) > 0:
-            return data["access-layers"][0]["name"]
-        return "Network"
+        layers = []
+        if data and "access-layers" in data:
+            for layer in data["access-layers"]:
+                layers.append(layer["name"])
+                
+        # Fallback just in case
+        if not layers:
+            layers.append("Network")
+            
+        return layers
 
     async def get_object_count(self, endpoint, package=None):
-        payload = {"limit": 500} 
-        
+        # CHANGED: Loop through all layers and sum the rule counts
         if endpoint == "show-access-rulebase":
-            layer = await self._get_layer(package)
-            payload = {"offset": 0, "limit": 1, "name": layer, "details-level": "standard"}
+            layers = await self._get_all_layers(package)
+            total_rules = 0
+            for layer in layers:
+                payload = {"offset": 0, "limit": 1, "name": layer, "details-level": "standard"}
+                data = await self._request(endpoint, payload)
+                if data and "total" in data:
+                    total_rules += data["total"]
+            return total_rules
             
         elif endpoint == "show-nat-rulebase":
             payload = {"offset": 0, "limit": 1, "package": package, "details-level": "standard"}
+            data = await self._request(endpoint, payload)
+            if data and "total" in data:
+                return data["total"]
+            return 0
             
-        data = await self._request(endpoint, payload)
-        if data and "total" in data:
-            return data["total"]
-        return 0
+        # Standard fallback for non-rulebase endpoints
+        else:
+            payload = {"limit": 500} 
+            data = await self._request(endpoint, payload)
+            if data and "total" in data:
+                return data["total"]
+            return 0
 
     async def get_all_access_rules(self, package):
-        layer = await self._get_layer(package)
+        layers = await self._get_all_layers(package)
         
         now = datetime.now()
         one_hour_ago = now - timedelta(hours=1)
+        all_rules = []
         
-        payload = {
-            "name": layer, 
-            "details-level": "standard", 
-            "limit": 500, 
-            "offset": 0,
-            "show-hits": True,
-            "hits-settings": {
-                "from-date": one_hour_ago.strftime("%Y-%m-%dT%H:%M:%S"),
-                "to-date": now.strftime("%Y-%m-%dT%H:%M:%S")
+        # CHANGED: Iterate through every layer to fetch its rules
+        for layer in layers:
+            payload = {
+                "name": layer, 
+                "details-level": "standard", 
+                "limit": 500, 
+                "offset": 0,
+                "show-hits": True,
+                "hits-settings": {
+                    "from-date": one_hour_ago.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "to-date": now.strftime("%Y-%m-%dT%H:%M:%S")
+                }
             }
-        }
-        
-        data = await self._request("show-access-rulebase", payload)
-        rules = []
-        if data and "rulebase" in data:
-            rules = self._extract_rules(data["rulebase"])
-        return rules
+            
+            data = await self._request("show-access-rulebase", payload)
+            if data and "rulebase" in data:
+                rules = self._extract_rules(data["rulebase"])
+                # Inject the specific layer name into each rule so the switch knows it
+                for rule in rules:
+                    rule["layer_name"] = layer
+                all_rules.extend(rules)
+                
+        return all_rules
 
     def _extract_rules(self, rulebase):
         rules = []
@@ -100,8 +127,8 @@ class CheckPointApiClient:
                 rules.append(item)
         return rules
 
-    async def set_access_rule_state(self, uid, package, enabled: bool):
-        layer = await self._get_layer(package)
+    # CHANGED: Accept the specific layer instead of the package
+    async def set_access_rule_state(self, uid, layer, enabled: bool):
         payload = {"uid": uid, "layer": layer, "enabled": enabled}
         return await self._request("set-access-rule", payload)
 
