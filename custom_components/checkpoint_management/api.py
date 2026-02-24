@@ -126,11 +126,6 @@ class CheckPointApiClient:
                     
         return gateways_data
 
-    async def install_database(self, targets):
-        payload = {"targets": targets}
-        data = await self._request("install-database", payload)
-        return data is not None
-
     async def verify_management_license(self):
         return await self._request("verify-management-license", {})
 
