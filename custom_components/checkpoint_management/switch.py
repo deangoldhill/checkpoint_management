@@ -51,6 +51,10 @@ class CheckPointRuleSwitch(SwitchEntity):
         )
 
     @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+    @property
     def is_on(self):
         rules = self.coordinator.data.get("rules", [])
         for rule in rules:
