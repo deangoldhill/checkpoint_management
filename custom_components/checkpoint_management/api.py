@@ -46,7 +46,6 @@ class CheckPointApiClient:
             return [pkg["name"] for pkg in data["packages"]]
         return []
 
-    # CHANGED: Now uses show-access-layers to get EVERY layer, including inline layers
     async def _get_all_layers(self):
         data = await self._request("show-access-layers", {"limit": 500, "details-level": "standard"})
         layers = []
@@ -55,37 +54,50 @@ class CheckPointApiClient:
                 layers.append(layer["name"])
                 
         if not layers:
-            layers.append("Network") # Safety fallback
+            layers.append("Network")
             
         return layers
 
+    # CHANGED: Now returns a dictionary with both 'total' and 'names'
     async def get_object_count(self, endpoint, package=None):
         if endpoint == "show-access-rulebase":
-            layers = await self._get_all_layers() # Fetch all layers globally
+            layers = await self._get_all_layers()
             total_rules = 0
             for layer in layers:
                 payload = {"offset": 0, "limit": 1, "name": layer, "details-level": "standard"}
                 data = await self._request(endpoint, payload)
                 if data and "total" in data:
                     total_rules += data["total"]
-            return total_rules
+            return {"total": total_rules, "names": []}
             
         elif endpoint == "show-nat-rulebase":
-            payload = {"offset": 0, "limit": 1, "package": package, "details-level": "standard"}
+            payload = {"offset": 0, "limit": 500, "package": package, "details-level": "standard"}
             data = await self._request(endpoint, payload)
-            if data and "total" in data:
-                return data["total"]
-            return 0
+            if not data:
+                return {"total": 0, "names": []}
+            
+            rules = self._extract_rules(data.get("rulebase", []))
+            names = [r.get("name") or f"Rule {r.get('rule-number')}" for r in rules]
+            return {"total": data.get("total", 0), "names": names}
             
         else:
-            payload = {"limit": 500} 
+            payload = {"limit": 500, "details-level": "standard"} 
             data = await self._request(endpoint, payload)
-            if data and "total" in data:
-                return data["total"]
-            return 0
+            if not data:
+                return {"total": 0, "names": []}
+                
+            total = data.get("total", 0)
+            names = []
+            
+            if "objects" in data:
+                names = [obj.get("name") for obj in data["objects"] if "name" in obj]
+            elif "access-layers" in data:
+                names = [obj.get("name") for obj in data["access-layers"] if "name" in obj]
+                
+            return {"total": total, "names": names}
 
     async def get_all_access_rules(self, package):
-        layers = await self._get_all_layers() # Fetch all layers globally
+        layers = await self._get_all_layers() 
         
         now = datetime.now()
         one_hour_ago = now - timedelta(hours=1)
