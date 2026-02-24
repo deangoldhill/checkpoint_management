@@ -24,9 +24,19 @@ class CheckPointSensor(SensorEntity):
         self.key = key
         self.host = host
         self.entry_id = entry_id
-        self._attr_name = f"{key.replace('_', ' ').title()} Count"
+        
+        self._attr_name = self._format_name(key)
         self._attr_unique_id = f"cp_{self.entry_id}_{key}"
         self._attr_state_class = "measurement"
+
+    def _format_name(self, key):
+        if key.endswith("_objects"):
+            return key.replace('_', ' ').title()
+        
+        if key.endswith("s") and not key.endswith("ss"):
+            return f"{key[:-1].replace('_', ' ').title()} Objects"
+            
+        return f"{key.replace('_', ' ').title()} Objects"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -58,7 +68,8 @@ class CheckPointGatewayTypeSensor(SensorEntity):
         self.gw_type = gw_type
         self.host = host
         self.entry_id = entry_id
-        self._attr_name = f"{gw_type} Count"
+        
+        self._attr_name = f"{gw_type} Objects"
         self._attr_unique_id = f"cp_{self.entry_id}_gw_type_{gw_type.lower()}"
         self._attr_state_class = "measurement"
 
