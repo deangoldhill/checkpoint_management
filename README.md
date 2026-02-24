@@ -4,10 +4,10 @@ A custom integration for Home Assistant that connects to the Check Point Managem
 
 ## Features
 * **Device Grouping:** All entities automatically group underneath your Check Point server inside Home Assistant Devices.
-* **Granular Object Counters:** Track Hosts, Networks, Groups, Dynamic Objects, Security Zones, VPN Communities (Meshed, Star, Remote Access), and more.
+* **Granular Object Sensors:** Track Hosts, Networks, Groups, Dynamic Objects, Security Zones, VPN Communities (Meshed, Star, Remote Access), and more.
 * **Dynamic Gateway Detection:** Automatically discovers gateway/server types on your network and builds sensors mapping their quantities.
-* **Rule Switches with Rich Metadata:** Imports every rule inside your selected policy package as a toggleable switch entity. These switches track and display rich extra attributes including match hits, sources, destinations, and assigned actions.
-* **Actionable Buttons:** Allows you to install the Access Policy or Database natively via Home Assistant.
+* **Rule Switches with Rich Metadata:** Imports every rule inside your selected policy package as a toggleable switch entity. *Note: Rule switches are disabled by default to prevent dashboard clutter. You must enable them manually in your device settings.* These switches track and display rich extra attributes including match hits over the last hour, sources, destinations, and assigned actions.
+* **Actionable Buttons:** Allows you to install the Access Policy natively via Home Assistant.
 * **Advanced Config:** Supports dynamic polling intervals directly via UI setup.
 
 ## Prerequisites: Check Point API Setup
