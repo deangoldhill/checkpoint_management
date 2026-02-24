@@ -48,9 +48,24 @@ class CheckPointSensor(SensorEntity):
             configuration_url=f"https://{self.host}"
         )
 
+    # CHANGED: Extracts 'total' from the new dictionary format
     @property
     def state(self):
-        return self.coordinator.data.get(self.key)
+        data = self.coordinator.data.get(self.key)
+        if isinstance(data, dict):
+            return data.get("total", 0)
+        return 0
+
+    # NEW: Pushes the lists of names into Home Assistant attributes
+    @property
+    def extra_state_attributes(self):
+        data = self.coordinator.data.get(self.key)
+        if isinstance(data, dict):
+            names = data.get("names", [])
+            # Only populate the lists for the specific endpoints you requested
+            if self.key in ["access_layers", "networks", "hosts", "nat_rules"] and names:
+                return {"object_names": names}
+        return None
 
     @property
     def should_poll(self):
@@ -68,7 +83,6 @@ class CheckPointGatewayTypeSensor(SensorEntity):
         self.gw_type = gw_type
         self.host = host
         self.entry_id = entry_id
-        
         self._attr_name = f"{gw_type} Objects"
         self._attr_unique_id = f"cp_{self.entry_id}_gw_type_{gw_type.lower()}"
         self._attr_state_class = "measurement"
