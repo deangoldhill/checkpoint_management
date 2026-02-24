@@ -33,6 +33,9 @@ class CheckPointRuleSwitch(SwitchEntity):
         self.entry_id = entry_id
         self.rule_uid = rule_data.get("uid")
         
+        # CHANGED: Capture the specific layer this rule belongs to
+        self.rule_layer = rule_data.get("layer_name", "Network")
+        
         rule_name = rule_data.get("name")
         if not rule_name:
             rule_name = f"Rule {rule_data.get('rule-number')}"
@@ -67,10 +70,14 @@ class CheckPointRuleSwitch(SwitchEntity):
         rules = self.coordinator.data.get("rules", [])
         for rule in rules:
             if rule.get("uid") == self.rule_uid:
-                attributes = {"policy_package": self.package}
+                # CHANGED: Added the layer name to the attributes UI
+                attributes = {
+                    "policy_package": self.package,
+                    "layer": self.rule_layer
+                }
                 
                 for key, value in rule.items():
-                    if key in ["uid", "name", "enabled", "type", "rule-number"]:
+                    if key in ["uid", "name", "enabled", "type", "rule-number", "layer_name"]:
                         continue
                         
                     if isinstance(value, list) and all(isinstance(i, dict) and "name" in i for i in value):
@@ -95,7 +102,8 @@ class CheckPointRuleSwitch(SwitchEntity):
 
     async def _toggle_rule(self, state: bool):
         await self.api.login()
-        await self.api.set_access_rule_state(self.rule_uid, self.package, state)
+        # CHANGED: Pass the specific layer string to the toggle command
+        await self.api.set_access_rule_state(self.rule_uid, self.rule_layer, state)
         await self.api.publish()
         await self.api.install_policy(self.package)
         await self.api.logout()
