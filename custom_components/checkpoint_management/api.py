@@ -100,7 +100,7 @@ class CheckPointApiClient:
         layers = await self._get_all_layers() 
         
         now = datetime.now()
-        one_hour_ago = now - timedelta(hours=1)
+        one_hour_ago = now - timedelta(hours=168)
         all_rules = []
         
         for layer in layers:
